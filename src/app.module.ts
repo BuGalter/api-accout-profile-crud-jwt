@@ -4,6 +4,7 @@ import { AccountsModule } from './accounts/accounts.module';
 import { Account } from './accounts/entities/account.entity';
 import { Profile } from './profiles/entities/profile.entity';
 import { ProfilesModule } from './profiles/profiles.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ProfilesModule } from './profiles/profiles.module';
     }),
     AccountsModule,
     ProfilesModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
