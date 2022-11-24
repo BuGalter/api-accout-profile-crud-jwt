@@ -1,6 +1,5 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Request } from 'express';
 import { Repository } from 'typeorm';
 import { AuthService } from '../auth/auth.service';
 import { CreateAccountDto } from './dto/create-account.dto';
@@ -8,7 +7,6 @@ import { LoginAccountDto } from './dto/login-account.dto';
 import { Account } from './entities/account.entity';
 import { EmailNotUniqueException } from './exceptions/email-not-unique.exception';
 import { AccountUnauthorizedException } from './exceptions/unauthorized.exception';
-import { UserNotFoundException } from './exceptions/user-not-found.exception';
 
 @Injectable()
 export class AccountsService {
@@ -18,7 +16,7 @@ export class AccountsService {
     private readonly authService: AuthService,
   ) {}
 
-  async create(createAccountDto: CreateAccountDto): Promise<Account> {
+  async create(createAccountDto: CreateAccountDto): Promise<any> {
     const { email, password } = createAccountDto;
 
     const accountInDb = await this.accountRepository.findOneBy({ email });
@@ -30,30 +28,30 @@ export class AccountsService {
     const account = new Account();
     account.email = email;
     account.password = password;
+    await this.accountRepository.save(account);
 
-    return await this.accountRepository.save(account);
+    return {
+      accountId: account.id,
+      email: account.email,
+    };
   }
 
-  async findOne(id: number, req: Request): Promise<any> {
-    const idInToken = req.user;
-    // const account = await this.accountRepository.findOneBy({ id });
+  async findOne(id: number, req: any): Promise<any> {
+    const idInToken = req.user.accountId;
+
+    await this.authService.validateId(idInToken, id);
 
     const account = await this.accountRepository.findOne({
       where: {
-        id: 1,
+        id,
       },
       relations: {
         profile: true,
       },
     });
 
-    if (id !== +idInToken || !account.isLoggin) {
-      throw new UnauthorizedException();
-    }
-
-    if (!account) {
-      throw new UserNotFoundException();
-    }
+    await this.authService.validateAccount(account);
+    await this.authService.isAccountLoggin(account.isLoggin);
 
     const { password, isLoggin, profile, ...accountInfo } = account;
 
@@ -67,9 +65,8 @@ export class AccountsService {
     const { email, password } = loginAccountDto;
 
     const account = await this.accountRepository.findOneBy({ email });
-    if (!account) {
-      throw new UserNotFoundException();
-    }
+
+    await this.authService.validateAccount(account);
 
     const isValidPassword = await account.checkPassword(password);
     if (!isValidPassword) {
@@ -83,17 +80,15 @@ export class AccountsService {
     return await this.authService.createJwtToken(payload);
   }
 
-  async logout(id: number, req: Request): Promise<void> {
-    const idInToken = req.user;
+  async logout(id: number, req: any): Promise<void> {
+    const idInToken = req.user.accountId;
+
+    await this.authService.validateId(idInToken, id);
+
     const account = await this.accountRepository.findOneBy({ id });
 
-    if (id !== +idInToken || !account.isLoggin) {
-      throw new UnauthorizedException();
-    }
-
-    if (!account) {
-      throw new UserNotFoundException();
-    }
+    await this.authService.validateAccount(account);
+    await this.authService.isAccountLoggin(account.isLoggin);
 
     await this.accountRepository.update(id, { isLoggin: false });
   }
