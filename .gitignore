@@ -37,3 +37,4 @@ lerna-debug.log*
 #my files
 .env
 docker-compose.yml
+secret.ts
