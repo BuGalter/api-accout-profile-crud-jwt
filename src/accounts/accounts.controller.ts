@@ -19,7 +19,7 @@ import { LoginAccountDto } from './dto/login-account.dto';
 export class AccountsController {
   constructor(private readonly accountsService: AccountsService) {}
 
-  @Post('account')
+  @Post()
   create(@Body() createAccountDto: CreateAccountDto): Promise<any> {
     return this.accountsService.create(createAccountDto);
   }
