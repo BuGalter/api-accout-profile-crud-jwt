@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuthService } from '../auth/auth.service';
+import { IAccountInfo } from '../interfaces/account-info.interface';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { LoginAccountDto } from './dto/login-account.dto';
 import { Account } from './entities/account.entity';
@@ -16,49 +17,40 @@ export class AccountsService {
     private readonly authService: AuthService,
   ) {}
 
-  async create(createAccountDto: CreateAccountDto): Promise<any> {
-    const { email, password } = createAccountDto;
-
-    const accountInDb = await this.accountRepository.findOneBy({ email });
+  async create(createAccountDto: CreateAccountDto): Promise<IAccountInfo> {
+    const accountInDb = await this.accountRepository.findOneBy({
+      email: createAccountDto.email,
+    });
 
     if (accountInDb) {
       throw new EmailNotUniqueException();
     }
 
     const account = new Account();
-    account.email = email;
-    account.password = password;
+    account.email = createAccountDto.email;
+    account.password = createAccountDto.password;
+    account.profile = null;
+
     await this.accountRepository.save(account);
 
-    return {
-      accountId: account.id,
-      email: account.email,
-    };
+    const { password, isLoggin, ...accountInfo } = account;
+
+    return accountInfo;
   }
 
-  async findOne(id: number, req: any): Promise<any> {
+  async findOne(id: number, req: any): Promise<IAccountInfo> {
     const idInToken = req.user.accountId;
 
     await this.authService.validateId(idInToken, id);
 
-    const account = await this.accountRepository.findOne({
-      where: {
-        id,
-      },
-      relations: {
-        profile: true,
-      },
-    });
+    const account = await this.accountRepository.findOneBy({ id });
 
     await this.authService.validateAccount(account);
     await this.authService.isAccountLoggin(account.isLoggin);
 
-    const { password, isLoggin, profile, ...accountInfo } = account;
+    const { password, isLoggin, ...accountInfo } = account;
 
-    return {
-      accountInfo,
-      profile: account.profile,
-    };
+    return accountInfo;
   }
 
   async login(loginAccountDto: LoginAccountDto): Promise<any> {
@@ -80,7 +72,7 @@ export class AccountsService {
     return await this.authService.createJwtToken(payload);
   }
 
-  async logout(id: number, req: any): Promise<void> {
+  async logout(id: number, req: any): Promise<any> {
     const idInToken = req.user.accountId;
 
     await this.authService.validateId(idInToken, id);
@@ -91,5 +83,7 @@ export class AccountsService {
     await this.authService.isAccountLoggin(account.isLoggin);
 
     await this.accountRepository.update(id, { isLoggin: false });
+
+    return { id };
   }
 }
