@@ -23,7 +23,10 @@ export class Account {
   @Column({ default: false })
   isLoggin: boolean;
 
-  @OneToOne(() => Profile, (profile) => profile.account)
+  @OneToOne(() => Profile, {
+    eager: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn()
   profile: Profile;
 
