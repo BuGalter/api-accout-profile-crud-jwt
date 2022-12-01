@@ -10,6 +10,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { IAccountInfo } from '../interfaces/account-info.interface';
 import { AccountsService } from './accounts.service';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { LoginAccountDto } from './dto/login-account.dto';
@@ -20,14 +21,14 @@ export class AccountsController {
   constructor(private readonly accountsService: AccountsService) {}
 
   @Post()
-  create(@Body() createAccountDto: CreateAccountDto): Promise<any> {
+  create(@Body() createAccountDto: CreateAccountDto): Promise<IAccountInfo> {
     return this.accountsService.create(createAccountDto);
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string, @Req() req: Request): Promise<any> {
+  findOne(@Param('id') id: string, @Req() req: Request): Promise<IAccountInfo> {
     return this.accountsService.findOne(+id, req);
   }
 
@@ -39,7 +40,7 @@ export class AccountsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('logout/:id')
-  logout(@Param('id') id: string, @Req() req: Request): Promise<void> {
+  logout(@Param('id') id: string, @Req() req: Request): Promise<number> {
     return this.accountsService.logout(+id, req);
   }
 }
