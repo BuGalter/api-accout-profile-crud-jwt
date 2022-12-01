@@ -6,34 +6,54 @@ import {
   Patch,
   Param,
   Delete,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { ProfilesService } from './profiles.service';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Request } from 'express';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { IAccountInfo } from '../interfaces/account-info.interface';
 
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 @Controller('profiles')
 @ApiTags('profiles')
 export class ProfilesController {
   constructor(private readonly profilesService: ProfilesService) {}
 
   @Post()
-  create(@Body() createProfileDto: CreateProfileDto) {
-    return this.profilesService.create(createProfileDto);
+  create(
+    @Body() createProfileDto: CreateProfileDto,
+    @Req() req: Request,
+  ): Promise<IAccountInfo> {
+    return this.profilesService.create(createProfileDto, req);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.profilesService.findOne(+id);
+  @Get(':accountId')
+  findOne(
+    @Param('accountId') accountId: string,
+    @Req() req: Request,
+  ): Promise<IAccountInfo> {
+    return this.profilesService.findOne(+accountId, req);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProfileDto: UpdateProfileDto) {
-    return this.profilesService.update(+id, updateProfileDto);
+  @Patch(':accountId')
+  update(
+    @Param('accountId') accountId: string,
+    @Body() updateProfileDto: UpdateProfileDto,
+    @Req() req: Request,
+  ): Promise<IAccountInfo> {
+    return this.profilesService.update(+accountId, updateProfileDto, req);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.profilesService.remove(+id);
+  @Delete(':accountId')
+  remove(
+    @Param('accountId') accountId: string,
+    @Req() req: Request,
+  ): Promise<any> {
+    return this.profilesService.remove(+accountId, req);
   }
 }
