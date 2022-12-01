@@ -17,7 +17,4 @@ export class Profile {
 
   @Column()
   userInfo: string;
-
-  @OneToOne(() => Account, (account) => account.profile)
-  account: Account;
 }
